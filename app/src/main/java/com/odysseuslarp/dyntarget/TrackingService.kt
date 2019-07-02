@@ -26,7 +26,8 @@ import kotlinx.coroutines.*
 
 private const val CHANNEL_ID = "trackSrv"
 
-private const val MIN_INTERVAL_MILLIS = 2000L
+private const val LOCATION_REQUEST_INTERVAL = 3000L
+private const val MIN_DATABASE_UPDATE_INTERVAL = 3000L
 
 class TrackingService : Service() {
     inner class LocalBinder : Binder() {
@@ -82,7 +83,9 @@ class TrackingService : Service() {
         if (hasPermission) {
             startForeground(R.id.trackingActiveNotification, buildNotification())
             locationClient.requestLocationUpdates(
-                LocationRequest.create().setInterval(1000L),
+                LocationRequest.create()
+                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                    .setInterval(LOCATION_REQUEST_INTERVAL),
                 locationCallback,
                 Looper.getMainLooper()
             )
@@ -138,7 +141,7 @@ class TrackingService : Service() {
     private fun updateLocationIfNeeded() {
         if (currentUpdateJob == null && hasNewLocation) {
             hasNewLocation = false
-            val earliestNextUpdateTime = SystemClock.elapsedRealtime() + MIN_INTERVAL_MILLIS
+            val earliestNextUpdateTime = SystemClock.elapsedRealtime() + MIN_DATABASE_UPDATE_INTERVAL
             lastLocation.value?.let {
                 currentUpdateJob = MainScope().launch {
                     val success = updateLocation(it)
